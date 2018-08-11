@@ -283,16 +283,12 @@ impl<'a> Scanner<'a> {
     }
 
     fn next_matches(&mut self, c: char) -> bool {
-        let next = self.peek();
-        if let Some(n) = next {
-            if c == n {
+        match self.peek() {
+            Some(n) if c == n => {
                 self.advance();
                 true
-            } else {
-                false
             }
-        } else {
-            false
+            _ => false
         }
     }
 
