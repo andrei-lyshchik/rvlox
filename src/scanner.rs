@@ -142,6 +142,7 @@ impl<'a> Scanner<'a> {
             '>' => self.possible_two_char_token(Greater, '=', GreaterEqual),
             '<' => self.possible_two_char_token(Less, '=', LessEqual),
             '"' => self.string(),
+            '0' ... '9' => self.number(),
             _ => self.make_token(Error("Unexpected character"))
         }
     }
@@ -172,6 +173,36 @@ impl<'a> Scanner<'a> {
         self.advance();
         let str_lexeme = self.scan_str_lexeme();
         self.make_token(TokenType::String(str_lexeme))
+    }
+
+    fn number(&mut self) -> Token {
+        self.advance_while_digit();
+
+        if let Some('.') = self.peek() {
+            if let Some(n) = self.peek_next() {
+                if n.is_digit(10) {
+                    self.advance();
+
+                    self.advance_while_digit();
+                }
+            }
+        }
+
+        let num_lexeme = self.scan_lexeme();
+        let num: f64 = num_lexeme.parse().unwrap_or_else(|e|
+            panic!("Illegally parsed number: {}", e)
+        );
+
+        self.make_token(TokenType::Number(num))
+    }
+
+    fn advance_while_digit(&mut self) {
+        while let Some(c) = self.peek() {
+            if !c.is_digit(10) {
+                break;
+            }
+            self.advance();
+        }
     }
 
     fn next_matches(&mut self, c: char) -> bool {
@@ -311,6 +342,18 @@ mod tests {
         assert_eq!(t(string(""), 3), scanner.next());
         assert_eq!(t(Error("Unterminated string"), 4), scanner.next());
         assert_eq!(None, scanner.next());
+    }
+
+    #[test]
+    fn numbers() {
+        let source = "456 326.3 644..";
+        let mut scanner = Scanner::new(source);
+
+        assert_eq!(t(Number(456.0), 1), scanner.next());
+        assert_eq!(t(Number(326.3), 1), scanner.next());
+        assert_eq!(t(Number(644.0), 1), scanner.next());
+        assert_eq!(t(Dot, 1), scanner.next());
+        assert_eq!(t(Dot, 1), scanner.next());
     }
 
     fn t(t_type: TokenType, line: usize) -> Option<Token> {
