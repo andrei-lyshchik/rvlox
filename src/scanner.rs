@@ -1,6 +1,5 @@
 use std::str::Chars;
 use std::iter::Peekable;
-use std::mem::replace;
 
 use common::*;
 
