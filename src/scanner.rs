@@ -15,7 +15,6 @@ pub struct Scanner<'a> {
 #[derive(Debug, PartialEq)]
 pub struct Token {
     t_type: TokenType,
-    lexeme: String,
     line: usize,
 }
 
@@ -45,9 +44,9 @@ pub enum TokenType {
     LessEqual,
 
     // Literals.
-    Identifier,
-    String,
-    Number,
+    Identifier(String),
+    String(String),
+    Number(f64),
 
     // Keywords.
     And,
@@ -67,7 +66,7 @@ pub enum TokenType {
     Var,
     While,
 
-    Error,
+    Error(&'static str),
 }
 
 impl<'a> Scanner<'a> {
@@ -95,8 +94,11 @@ impl<'a> Scanner<'a> {
     }
 
     fn make_token(&mut self, t_type: TokenType) -> Token {
-        let lexeme = self.scan_lexeme();
-        Token { lexeme, t_type, line: self.line }
+        Token { t_type, line: self.line }
+    }
+
+    fn error_token(&self, msg: &'static str) -> Token {
+        return Token { t_type: TokenType::Error(msg), line: self.line }
     }
 
     fn scan_lexeme(&mut self) -> String {
@@ -106,6 +108,18 @@ impl<'a> Scanner<'a> {
             self.cur_len -= 1;
         }
         lexeme
+    }
+
+    fn scan_str_lexeme(&mut self) -> String {
+        let mut str_lexeme = String::new();
+        let _ = self.start.next();
+        for _ in 1..(self.cur_len - 1) {
+            str_lexeme.push(self.start.next().unwrap());
+        }
+        let _ = self.start.next();
+        self.cur_len = 0;
+
+        str_lexeme
     }
 
     fn match_char(&mut self, c: char) -> Token {
@@ -127,7 +141,8 @@ impl<'a> Scanner<'a> {
             '=' => self.possible_two_char_token(Equal, '=', EqualEqual),
             '>' => self.possible_two_char_token(Greater, '=', GreaterEqual),
             '<' => self.possible_two_char_token(Less, '=', LessEqual),
-            _ => self.make_token(Error)
+            '"' => self.string(),
+            _ => self.make_token(Error("Unexpected character"))
         }
     }
 
@@ -138,6 +153,25 @@ impl<'a> Scanner<'a> {
             cur_type
         };
         self.make_token(t_type)
+    }
+
+    fn string(&mut self) -> Token {
+        while let Some(c) = self.peek() {
+            if c == '"' {
+                break;
+            }
+            if c == '\n' {
+                self.line += 1;
+            }
+            self.advance();
+        }
+
+        if self.peek().is_none() {
+            return self.error_token("Unterminated string");
+        }
+        self.advance();
+        let str_lexeme = self.scan_str_lexeme();
+        self.make_token(TokenType::String(str_lexeme))
     }
 
     fn next_matches(&mut self, c: char) -> bool {
@@ -160,7 +194,7 @@ impl<'a> Scanner<'a> {
                 match c {
                     ' ' | '\r' | '\t' => {
                         self.advance();
-                    },
+                    }
                     '\n' => {
                         self.line += 1;
                         self.advance();
@@ -176,7 +210,7 @@ impl<'a> Scanner<'a> {
                 break;
             }
         }
-        self.skip_lexeme();
+        self.sync_start();
     }
 
     fn skip_if_comment(&mut self) -> bool {
@@ -193,7 +227,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn skip_lexeme(&mut self) {
+    fn sync_start(&mut self) {
         while self.cur_len > 0 {
             let _ = self.start.next();
             self.cur_len -= 1;
@@ -241,18 +275,18 @@ mod tests {
         let source = "/* != = +\n <  (){}\n!";
         let mut scanner = Scanner::new(source);
 
-        assert_eq!(t("/", Slash, 1), scanner.next());
-        assert_eq!(t("*", Star, 1), scanner.next());
-        assert_eq!(t("!=", BangEqual, 1), scanner.next());
-        assert_eq!(t("=", Equal, 1), scanner.next());
-        assert_eq!(t("+", Plus, 1), scanner.next());
+        assert_eq!(t(Slash, 1), scanner.next());
+        assert_eq!(t(Star, 1), scanner.next());
+        assert_eq!(t(BangEqual, 1), scanner.next());
+        assert_eq!(t(Equal, 1), scanner.next());
+        assert_eq!(t(Plus, 1), scanner.next());
 
-        assert_eq!(t("<", Less, 2), scanner.next());
-        assert_eq!(t("(", LeftParen, 2), scanner.next());
-        assert_eq!(t(")", RightParen, 2), scanner.next());
-        assert_eq!(t("{", LeftBrace, 2), scanner.next());
-        assert_eq!(t("}", RightBrace, 2), scanner.next());
-        assert_eq!(t("!", Bang, 3), scanner.next());
+        assert_eq!(t(Less, 2), scanner.next());
+        assert_eq!(t(LeftParen, 2), scanner.next());
+        assert_eq!(t(RightParen, 2), scanner.next());
+        assert_eq!(t(LeftBrace, 2), scanner.next());
+        assert_eq!(t(RightBrace, 2), scanner.next());
+        assert_eq!(t(Bang, 3), scanner.next());
 
         assert_eq!(None, scanner.next());
     }
@@ -262,12 +296,28 @@ mod tests {
         let source = "+ // fr2f34f23f24;\n//\n/\n///";
         let mut scanner = Scanner::new(source);
 
-        assert_eq!(t("+", Plus, 1), scanner.next());
-        assert_eq!(t("/", Slash, 3), scanner.next());
+        assert_eq!(t(Plus, 1), scanner.next());
+        assert_eq!(t(Slash, 3), scanner.next());
         assert_eq!(None, scanner.next());
     }
 
-    fn t(lexeme: &'static str, t_type: TokenType, line: usize) -> Option<Token> {
-        Some(Token { lexeme: lexeme.to_string(), t_type, line })
+    #[test]
+    fn strings() {
+        let source = "\"abcde\" \"fgh\nij\"\n\"\"\n\"klmn";
+        let mut scanner = Scanner::new(source);
+
+        assert_eq!(t(string("abcde"), 1), scanner.next());
+        assert_eq!(t(string("fgh\nij"), 2), scanner.next());
+        assert_eq!(t(string(""), 3), scanner.next());
+        assert_eq!(t(Error("Unterminated string"), 4), scanner.next());
+        assert_eq!(None, scanner.next());
+    }
+
+    fn t(t_type: TokenType, line: usize) -> Option<Token> {
+        Some(Token { t_type, line })
+    }
+
+    fn string(lexeme: &'static str) -> TokenType {
+        String(lexeme.to_string())
     }
 }
