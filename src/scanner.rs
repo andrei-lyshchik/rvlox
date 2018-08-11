@@ -142,7 +142,15 @@ impl<'a> Scanner<'a> {
             '<' => self.possible_two_char_token(Less, '=', LessEqual),
             '"' => self.string(),
             c if c.is_digit(10) => self.number(),
+            c if Self::is_allowed_for_identifier(c) => self.identifier(),
             _ => self.make_token(Error("Unexpected character"))
+        }
+    }
+
+    fn is_allowed_for_identifier(c: char) -> bool {
+        match c {
+            'a' ... 'z' | 'A' ... 'Z' | '_' => true,
+            _ => false
         }
     }
 
@@ -196,6 +204,81 @@ impl<'a> Scanner<'a> {
     fn advance_while_digit(&mut self) {
         while let Some('0' ... '9') = self.peek() {
             self.advance();
+        }
+    }
+
+    fn identifier(&mut self) -> Token {
+        while let Some(c) = self.peek() {
+            if !Self::is_allowed_for_identifier(c) {
+                break;
+            }
+            self.advance();
+        }
+
+        self.keyword_or_identifier()
+    }
+
+    fn keyword_or_identifier(&mut self) -> Token {
+
+        let lexeme = self.scan_lexeme();
+        let keyword = Self::check_if_keyword(&lexeme);
+
+        if let Some(keyword) = keyword {
+            self.make_token(keyword)
+        } else {
+            self.make_token(TokenType::Identifier(lexeme))
+        }
+    }
+
+    fn check_if_keyword(lexeme: &str) -> Option<TokenType> {
+        use self::TokenType::*;
+
+        let bs = lexeme.as_bytes();
+        match bs[0] {
+            b'a' => Self::check_suffix(1, bs, "nd", And),
+            b'c' => Self::check_suffix(1, bs, "lass", Class),
+            b'e' => Self::check_suffix(1, bs, "lse", Else),
+            b'i' => Self::check_suffix(1, bs, "f", If),
+            b'n' => Self::check_suffix(1, bs, "il", Nil),
+            b'o' => Self::check_suffix(1, bs, "r", Or),
+            b'p' => Self::check_suffix(1, bs, "rint", Print),
+            b'r' => Self::check_suffix(1, bs, "eturn", Return),
+            b's' => Self::check_suffix(1, bs, "uper", Super),
+            b'v' => Self::check_suffix(1, bs, "ar", Var),
+            b'w' => Self::check_suffix(1, bs, "hile", While),
+            b't' => {
+                if bs.len() > 1 {
+                    match bs[1] {
+                        b'h' => Self::check_suffix(2, bs, "is", This),
+                        b'r' => Self::check_suffix(2, bs, "ue", True),
+                        _ => None
+                    }
+                } else {
+                    None
+                }
+            }
+            b'f' => {
+                if bs.len() > 1 {
+                    match bs[1] {
+                        b'a' => Self::check_suffix(2, bs, "lse", False),
+                        b'o' => Self::check_suffix(2, bs, "r", For),
+                        b'u' => Self::check_suffix(2, bs, "n", Fun),
+                        _ => None
+                    }
+                } else {
+                    None
+                }
+            }
+            _ => None
+        }
+    }
+
+    fn check_suffix(from: usize, lexeme_bytes: &[u8], suffix: &str, t_type: TokenType) -> Option<TokenType> {
+        let actual_suffix = &lexeme_bytes[from..];
+        if actual_suffix == suffix.as_bytes() {
+            Some(t_type)
+        } else {
+            None
         }
     }
 
@@ -350,11 +433,30 @@ mod tests {
         assert_eq!(t(Dot, 1), scanner.next());
     }
 
+    #[test]
+    fn keywords_and_identifiers() {
+        let source = "this falsefied false t that bad class";
+        let mut scanner = Scanner::new(source);
+
+        assert_eq!(t(This, 1), scanner.next());
+        assert_eq!(t(ident("falsefied"), 1), scanner.next());
+        assert_eq!(t(False, 1), scanner.next());
+        assert_eq!(t(ident("t"), 1), scanner.next());
+        assert_eq!(t(ident("that"), 1), scanner.next());
+        assert_eq!(t(ident("bad"), 1), scanner.next());
+        assert_eq!(t(Class, 1), scanner.next());
+        assert_eq!(None, scanner.next());
+    }
+
     fn t(t_type: TokenType, line: usize) -> Option<Token> {
         Some(Token { t_type, line })
     }
 
     fn string(lexeme: &'static str) -> TokenType {
         String(lexeme.to_string())
+    }
+
+    fn ident(lexeme: &'static str) -> TokenType {
+        Identifier(lexeme.to_string())
     }
 }
