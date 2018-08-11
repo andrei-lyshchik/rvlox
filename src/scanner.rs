@@ -141,7 +141,7 @@ impl<'a> Scanner<'a> {
             '>' => self.possible_two_char_token(Greater, '=', GreaterEqual),
             '<' => self.possible_two_char_token(Less, '=', LessEqual),
             '"' => self.string(),
-            '0' ... '9' => self.number(),
+            c if c.is_digit(10) => self.number(),
             _ => self.make_token(Error("Unexpected character"))
         }
     }
@@ -178,12 +178,10 @@ impl<'a> Scanner<'a> {
         self.advance_while_digit();
 
         if let Some('.') = self.peek() {
-            if let Some(n) = self.peek_next() {
-                if n.is_digit(10) {
-                    self.advance();
+            if let Some('0' ... '9') = self.peek_next() {
+                self.advance();
 
-                    self.advance_while_digit();
-                }
+                self.advance_while_digit();
             }
         }
 
@@ -196,10 +194,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn advance_while_digit(&mut self) {
-        while let Some(c) = self.peek() {
-            if !c.is_digit(10) {
-                break;
-            }
+        while let Some('0' ... '9') = self.peek() {
             self.advance();
         }
     }
