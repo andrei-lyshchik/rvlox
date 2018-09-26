@@ -1,8 +1,6 @@
 use std::str::Chars;
 use std::iter::Peekable;
 
-use common::*;
-
 pub struct Scanner<'a> {
     start: Chars<'a>,
     current: Peekable<Chars<'a>>,
@@ -11,13 +9,13 @@ pub struct Scanner<'a> {
     line: usize,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
-    t_type: TokenType,
-    line: usize,
+    pub t_type: TokenType,
+    pub line: usize,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,

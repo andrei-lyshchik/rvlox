@@ -1,6 +1,6 @@
 use value::Value;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Instruction {
     Return,
     Constant(usize),
@@ -11,8 +11,11 @@ pub enum Instruction {
     Divide,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct InstructionWithLine(pub Instruction, pub usize);
+
 pub struct Chunk {
-    pub instructions: Vec<Instruction>,
+    pub instructions: Vec<InstructionWithLine>,
     pub constants: Vec<Value>,
 }
 
@@ -21,8 +24,8 @@ impl Chunk {
         Chunk { instructions: Vec::new(), constants: Vec::new() }
     }
 
-    pub fn add_instruction(&mut self, oc: Instruction) {
-        self.instructions.push(oc)
+    pub fn add_instruction(&mut self, oc: Instruction, line: usize) {
+        self.instructions.push(InstructionWithLine(oc, line))
     }
 
     pub fn add_constant(&mut self, c: Value) -> usize {

@@ -36,13 +36,13 @@ impl VM {
         use common::Instruction::*;
         use self::InterpretResult::*;
         loop {
-            match self.read_instruction(chunk) {
+            match self.read_instruction(chunk).0 {
                 Return => {
                     println!("{:?}", self.stack_pop());
                     return Ok
                 },
                 Constant(c) => {
-                    let value = chunk.read_constant(*c);
+                    let value = chunk.read_constant(c);
                     self.stack_push(value.clone())
                 },
                 Negate => {
@@ -60,7 +60,7 @@ impl VM {
         }
     }
 
-    fn read_instruction<'a>(&mut self, chunk: &'a Chunk) -> &'a Instruction {
+    fn read_instruction<'a>(&mut self, chunk: &'a Chunk) -> &'a InstructionWithLine {
         self.ip += 1;
         &chunk.instructions[self.ip - 1]
     }
