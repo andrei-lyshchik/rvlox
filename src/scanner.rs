@@ -1,5 +1,5 @@
-use std::str::Chars;
 use std::iter::Peekable;
+use std::str::Chars;
 
 pub struct Scanner<'a> {
     start: Chars<'a>,
@@ -91,11 +91,17 @@ impl<'a> Scanner<'a> {
     }
 
     fn make_token(&mut self, t_type: TokenType) -> Token {
-        Token { t_type, line: self.line }
+        Token {
+            t_type,
+            line: self.line,
+        }
     }
 
     fn error_token(&self, msg: &'static str) -> Token {
-        return Token { t_type: TokenType::Error(msg), line: self.line }
+        return Token {
+            t_type: TokenType::Error(msg),
+            line: self.line,
+        };
     }
 
     fn scan_lexeme(&mut self) -> String {
@@ -141,18 +147,23 @@ impl<'a> Scanner<'a> {
             '"' => self.string(),
             c if c.is_digit(10) => self.number(),
             c if Self::is_allowed_for_identifier(c) => self.identifier(),
-            _ => self.make_token(Error("Unexpected character"))
+            _ => self.make_token(Error("Unexpected character")),
         }
     }
 
     fn is_allowed_for_identifier(c: char) -> bool {
         match c {
-            'a' ... 'z' | 'A' ... 'Z' | '_' => true,
-            _ => false
+            'a'..='z' | 'A'..='Z' | '_' => true,
+            _ => false,
         }
     }
 
-    fn possible_two_char_token(&mut self, cur_type: TokenType, char_to_match: char, possible_type: TokenType) -> Token {
+    fn possible_two_char_token(
+        &mut self,
+        cur_type: TokenType,
+        char_to_match: char,
+        possible_type: TokenType,
+    ) -> Token {
         let t_type = if self.next_matches(char_to_match) {
             possible_type
         } else {
@@ -184,7 +195,7 @@ impl<'a> Scanner<'a> {
         self.advance_while_digit();
 
         if let Some('.') = self.peek() {
-            if let Some('0' ... '9') = self.peek_next() {
+            if let Some('0'..='9') = self.peek_next() {
                 self.advance();
 
                 self.advance_while_digit();
@@ -192,15 +203,15 @@ impl<'a> Scanner<'a> {
         }
 
         let num_lexeme = self.scan_lexeme();
-        let num: f64 = num_lexeme.parse().unwrap_or_else(|e|
-            panic!("Illegally parsed number: {}", e)
-        );
+        let num: f64 = num_lexeme
+            .parse()
+            .unwrap_or_else(|e| panic!("Illegally parsed number: {}", e));
 
         self.make_token(TokenType::Number(num))
     }
 
     fn advance_while_digit(&mut self) {
-        while let Some('0' ... '9') = self.peek() {
+        while let Some('0'..='9') = self.peek() {
             self.advance();
         }
     }
@@ -217,7 +228,6 @@ impl<'a> Scanner<'a> {
     }
 
     fn keyword_or_identifier(&mut self) -> Token {
-
         let lexeme = self.scan_lexeme();
         let keyword = Self::check_if_keyword(&lexeme);
 
@@ -249,7 +259,7 @@ impl<'a> Scanner<'a> {
                     match bs[1] {
                         b'h' => Self::check_suffix(2, bs, "is", This),
                         b'r' => Self::check_suffix(2, bs, "ue", True),
-                        _ => None
+                        _ => None,
                     }
                 } else {
                     None
@@ -261,17 +271,22 @@ impl<'a> Scanner<'a> {
                         b'a' => Self::check_suffix(2, bs, "lse", False),
                         b'o' => Self::check_suffix(2, bs, "r", For),
                         b'u' => Self::check_suffix(2, bs, "n", Fun),
-                        _ => None
+                        _ => None,
                     }
                 } else {
                     None
                 }
             }
-            _ => None
+            _ => None,
         }
     }
 
-    fn check_suffix(from: usize, lexeme_bytes: &[u8], suffix: &str, t_type: TokenType) -> Option<TokenType> {
+    fn check_suffix(
+        from: usize,
+        lexeme_bytes: &[u8],
+        suffix: &str,
+        t_type: TokenType,
+    ) -> Option<TokenType> {
         let actual_suffix = &lexeme_bytes[from..];
         if actual_suffix == suffix.as_bytes() {
             Some(t_type)
@@ -286,7 +301,7 @@ impl<'a> Scanner<'a> {
                 self.advance();
                 true
             }
-            _ => false
+            _ => false,
         }
     }
 
@@ -306,7 +321,7 @@ impl<'a> Scanner<'a> {
                             break;
                         }
                     }
-                    _ => break
+                    _ => break,
                 }
             } else {
                 break;
@@ -359,10 +374,8 @@ impl<'a> Iterator for Scanner<'a> {
         self.skip_whitespaces();
         let c = self.advance();
         match c {
-            Some(c) => {
-                Some(self.match_char(c))
-            }
-            None => None
+            Some(c) => Some(self.match_char(c)),
+            None => None,
         }
     }
 }

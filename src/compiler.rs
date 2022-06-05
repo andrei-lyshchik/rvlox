@@ -321,19 +321,19 @@ mod tests {
         check(
             "1 - 2 * 3",
             vec![c(0), c(1), c(2), Multiply, Subtract],
-            vec![1.0, 2.0, 3.0]
+            vec![1.0, 2.0, 3.0],
         );
 
         check(
             "1 + 4 / 2",
             vec![c(0), c(1), c(2), Divide, Add],
-            vec![1.0, 4.0, 2.0]
+            vec![1.0, 4.0, 2.0],
         );
 
         check(
             "2 * 3 + 4 / 5",
             vec![c(0), c(1), Multiply, c(2), c(3), Divide, Add],
-            vec![2.0, 3.0, 4.0, 5.0]
+            vec![2.0, 3.0, 4.0, 5.0],
         );
     }
 
@@ -342,13 +342,13 @@ mod tests {
         check(
             "(1 + 2) * (3 - 4)",
             vec![c(0), c(1), Add, c(2), c(3), Subtract, Multiply],
-            vec![1.0, 2.0, 3.0, 4.0]
+            vec![1.0, 2.0, 3.0, 4.0],
         );
 
         check(
             "(((1 + 3) * 4) + 2) * 5",
             vec![c(0), c(1), Add, c(2), Multiply, c(3), Add, c(4), Multiply],
-            vec![1.0, 3.0, 4.0, 2.0, 5.0]
+            vec![1.0, 3.0, 4.0, 2.0, 5.0],
         );
     }
 
@@ -357,11 +357,7 @@ mod tests {
 
         let op_instruction = instruction_by_char_op(op);
 
-        let instructions = vec![
-            c(0),
-            c(1),
-            op_instruction,
-        ];
+        let instructions = vec![c(0), c(1), op_instruction];
         let constants = vec![lhs, rhs];
 
         check(&source, instructions, constants);
@@ -378,7 +374,6 @@ mod tests {
     }
 
     fn check_binary_assoc(n1: f64, n2: f64, n3: f64, op: char) {
-
         let source = format!("{} {} {} {} {}", n1, op, n2, op, n3);
 
         let op_instruction = instruction_by_char_op(op);
@@ -418,5 +413,4 @@ mod tests {
     fn c(i: usize) -> Instruction {
         Constant(i)
     }
-
 }

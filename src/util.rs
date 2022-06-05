@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::Read;
-use std::process;
 use std::io::{self};
+use std::process;
 
 use vm::interpret_source;
 use vm::InterpretResult;
@@ -21,7 +21,7 @@ pub enum RunningMode {
 
 pub fn parse_args_for_running_mode(args: &Vec<String>) -> Result<RunningMode, &'static str> {
     if args.len() > 2 {
-        return Err("Usage: rlox [script]")
+        return Err("Usage: rlox [script]");
     }
 
     if args.len() > 1 {
@@ -41,7 +41,7 @@ pub fn run_file(file_name: String) {
     match interpret_source(&source) {
         InterpretResult::Ok => process::exit(0),
         InterpretResult::RuntimeError => process::exit(1),
-        InterpretResult::CompileError => process::exit(2)
+        InterpretResult::CompileError => process::exit(2),
     }
 }
 

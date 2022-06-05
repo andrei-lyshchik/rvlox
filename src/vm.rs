@@ -1,10 +1,10 @@
 use common::*;
-use value::*;
 use compiler::compile;
+use value::*;
 
 pub struct VM {
     ip: usize,
-    stack: Vec<Value>
+    stack: Vec<Value>,
 }
 
 pub enum InterpretResult {
@@ -19,39 +19,42 @@ macro_rules! binary_stack_op {
             if let Some(l) = $sel.stack_pop() {
                 $sel.stack_push(l.$name(&r))
             } else {
-                return RuntimeError
+                return RuntimeError;
             }
         } else {
-            return RuntimeError
+            return RuntimeError;
         }
     };
 }
 
 impl VM {
     pub fn new() -> VM {
-        VM { ip: 0, stack: Vec::new() }
+        VM {
+            ip: 0,
+            stack: Vec::new(),
+        }
     }
 
     pub fn interpret(&mut self, chunk: &Chunk) -> InterpretResult {
-        use common::Instruction::*;
         use self::InterpretResult::*;
+        use common::Instruction::*;
         loop {
             match self.read_instruction(chunk).0 {
                 Return => {
                     println!("{:?}", self.stack_pop());
-                    return Ok
-                },
+                    return Ok;
+                }
                 Constant(c) => {
                     let value = chunk.read_constant(c);
                     self.stack_push(value.clone())
-                },
+                }
                 Negate => {
                     if let Some(v) = self.stack_pop() {
                         self.stack_push(v.negate());
                     } else {
-                        return RuntimeError
+                        return RuntimeError;
                     }
-                },
+                }
                 Add => binary_stack_op!(self, add),
                 Multiply => binary_stack_op!(self, multiply),
                 Divide => binary_stack_op!(self, divide),

@@ -6,7 +6,6 @@ use std::process;
 use rvlox::util::*;
 
 fn main() {
-
     let args: Vec<String> = env::args().collect();
 
     let running_mode = parse_args_for_running_mode(&args).unwrap_or_else(|err| {
@@ -18,5 +17,4 @@ fn main() {
         RunningMode::Script(file_name) => run_file(file_name),
         RunningMode::Repl => run_repl(),
     }
-
 }

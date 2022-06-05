@@ -21,7 +21,10 @@ pub struct Chunk {
 
 impl Chunk {
     pub fn new() -> Chunk {
-        Chunk { instructions: Vec::new(), constants: Vec::new() }
+        Chunk {
+            instructions: Vec::new(),
+            constants: Vec::new(),
+        }
     }
 
     pub fn add_instruction(&mut self, oc: Instruction, line: usize) {

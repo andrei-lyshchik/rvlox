@@ -1,6 +1,6 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
-    Double(f64)
+    Double(f64),
 }
 
 macro_rules! binary_operator {
@@ -18,9 +18,7 @@ macro_rules! binary_operator {
 impl Value {
     pub fn negate(&self) -> Value {
         match self {
-            Value::Double(d) => {
-                Value::Double(-d)
-            }
+            Value::Double(d) => Value::Double(-d),
         }
     }
 
